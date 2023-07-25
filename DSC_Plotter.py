@@ -18,15 +18,34 @@ from matplotlib import colormaps as cm
 # create default dict like in other scripts.
 
 
-d_input = [file for file in os.listdir() if '-DSC' in file and os.path.splitext(file)[1] == '.txt'][0]
-d_ext = 'png'
-d_output = '.'.join((os.path.splitext(d_input)[0],d_ext))
+# Helper functions for argparse defaults
+def get_default_input(directory=''):
+
+	'''Dynamically determine input file if none found.'''
+
+	if directory != '': directory = os.path.join(directory,'*.txt')
+
+	files = glob('%s*.txt'%directory)
+
+	for file in files:
+		with open(file) as inf:
+			if '\n[step]\n' in inf.read():
+				return file
+
+
+defaults = {'input_file':get_default_input(),
+			'extension':'png',
+			'silent':False,
+			'colors':None} # add options
+
+defaults['output_file'] = os.path.splitext(defaults['input_file'])[0] + '.' + defaults['extension']
 
 parser = argparse.ArgumentParser(description='Creates a plot of a Trios DSC outputfile, which has been exported to plaintext (.txt)')
-parser.add_argument('-i', '--input_file', default=d_input, help='Specify the input files.')
-parser.add_argument('-o', '--output_file', default=d_output, help='Specify the output files.')
-parser.add_argument('-x', '--extension', default=d_ext, help='Specify the output file\'s extension.')
-parser.add_argument('-s', '--silent', action='store_true', help='Run in silent mode. Do not open interactive')
+parser.add_argument('-i', '--input_file', default=defaults['input_file'], help='Specify the input files.')
+parser.add_argument('-o', '--output_file', default=defaults['output_file'], help='Specify the output files.')
+parser.add_argument('-x', '--extension', default=defaults['extension'], help='Specify the output file\'s extension.')
+parser.add_argument('-s', '--silent', default=defaults['silent'], action='store_true', help='Run in silent mode. Do not open interactive')
+parser.add_argument('-c', '--colors', default=defaults['extension'], help='Specify the output file\'s extension.')
 args = parser.parse_args()
 
 
@@ -222,5 +241,9 @@ def plot_SDT(data:dict,outfile:str):
 
 
 infile = args.input_file
+
+if os.path.isdir(infile):
+	infile = get_default_input()
+
 data = get_data(infile)
 plot_SDT(data,args.output_file)
